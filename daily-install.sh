@@ -83,7 +83,20 @@ cd $homefront
 git clone    https://github.com/wenzhuo4657/dailyWeb-Front.git
 npm run build
 
-# TODO 这里要插入nginx的server，通过server_name进行区分，且注意，目录权限
+
+
+echo "server {
+    listen       80;
+    server_name  daily.wenzhuo4657.org;
+    root         $homefront/dailyWeb-Front/dist;
+    index        index.html;
+    location / {
+        try_files \$uri \$uri/ /index.html;
+    }
+}" > /etc/nginx/conf.d/daily.conf
 
 
 echo "前端部署完成"
+
+
+system restart nginx
