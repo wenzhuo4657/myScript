@@ -22,8 +22,11 @@ case "${ans:-y}"  in
 esac
 
 mkdir -p -- "$home"
-# TODO 后续需要将home变量写入用户的shell环境中，方便编写一键卸载脚本
-echo "最终安装目录为：$home"
+
+
+echo "export DAILY_HOME=$home"  >> $HOME/.bashrc
+source .bashrc
+echo "最终安装目录为：$home,对应环境变量DAILY_HOME"
 
 
 
@@ -71,15 +74,16 @@ cd dailyWeb-back/dailyWeb/
 
 mvn clean package > /dev/null
 
-#java  -Ddir.beifen=$home/beifen -jar  target/
+nohup java  -Ddir.beifen=$home/beifen -jar  target/dailyWeb-1.0-SNAPSHOT.jar  &
 
 echo "后端部署完成"
 
 echo "开始进行前端部署"
 cd $homefront
 git clone    https://github.com/wenzhuo4657/dailyWeb-Front.git
+npm run build
 
 # TODO 这里要插入nginx的server，通过server_name进行区分，且注意，目录权限
 
-# TODO 前后端路径待整理统一
+
 echo "前端部署完成"
