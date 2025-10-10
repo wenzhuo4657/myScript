@@ -36,7 +36,7 @@ mkdir  -p $homeback
 mkdir -p $homefront
 
 
-REQUIRED_CMDS=(git screen node mvn nginx )
+REQUIRED_CMDS=(git  node mvn nginx )
 echo "检查依赖安装安装： ${REQUIRED_CMDS[*]}"
 
 missing=()
@@ -82,16 +82,22 @@ echo "开始进行前端部署"
 cd $homefront
 git clone    https://github.com/wenzhuo4657/dailyWeb-Front.git
 cd dailyWeb-Front/daily
+npm install
 npm run build
+
+
+mkdir -p /var/www/daily
+cp -r $homefront/dailyWeb-Front/daily/dist/* /var/www/daily
+chown -R www-data:www-data /var/www/daily
 
 
 
 echo "server {
     listen       80;
     server_name  daily.wenzhuo4657.org;
-    root         $homefront/dailyWeb-Front/daily/dist;
+    root         /var/www/daily;
     index        index.html;
-    location / {
+    location /md-web {
         try_files \$uri \$uri/ /index.html;
     }
 }" > /etc/nginx/conf.d/daily.conf
