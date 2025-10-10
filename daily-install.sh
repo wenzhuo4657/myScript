@@ -100,4 +100,4 @@ echo "server {
 echo "前端部署完成"
 
 
-system restart nginx
+systemctl restart nginx
