@@ -40,7 +40,7 @@ echo "邮箱备份完成"
 echo "开始备份日程记录"
 BACKUP_FILE="$BACKUP_PATH/mdWeb_backup_$BACKUP_DATE.md"
  
-cp /home/user/snap/daily/beifen/content.md   $BACKUP_FILE
+cp  $DAIL_HOME/beifen/content.md   $BACKUP_FILE
 echo "备份"  | mailx -s "备份-daily备份" -A  $BACKUP_FILE   wenzhuo4657@gmail.com
 
 #echo "备份"  | mailx -s "备份-typecho备份" -A  $BACKUP_FILE   wenzhuo4657@gmail.com

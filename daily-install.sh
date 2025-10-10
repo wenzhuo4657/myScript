@@ -81,6 +81,7 @@ echo "后端部署完成"
 echo "开始进行前端部署"
 cd $homefront
 git clone    https://github.com/wenzhuo4657/dailyWeb-Front.git
+cd dailyWeb-Front/daily
 npm run build
 
 
@@ -88,7 +89,7 @@ npm run build
 echo "server {
     listen       80;
     server_name  daily.wenzhuo4657.org;
-    root         $homefront/dailyWeb-Front/dist;
+    root         $homefront/dailyWeb-Front/daily/dist;
     index        index.html;
     location / {
         try_files \$uri \$uri/ /index.html;

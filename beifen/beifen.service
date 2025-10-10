@@ -1,0 +1,5 @@
+[Unit]
+Description=自定义备份脚本
+
+[Service]
+ExecStart=/bin/bash /home/user/scripts/mdweb.sh
