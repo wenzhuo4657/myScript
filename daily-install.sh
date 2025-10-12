@@ -86,6 +86,7 @@ npm install
 npm run build
 
 
+rm -rf /var/www/daily
 mkdir -p /var/www/daily
 cp -r $homefront/dailyWeb-Front/daily/dist/* /var/www/daily
 chown -R www-data:www-data /var/www/daily
@@ -93,14 +94,31 @@ chown -R www-data:www-data /var/www/daily
 
 
 echo "server {
-    listen       80;
-    server_name  daily.wenzhuo4657.org;
-    root         /var/www/daily;
-    index        index.html;
-    location /md-web {
-        try_files \$uri \$uri/ /index.html;
-    }
-}" > /etc/nginx/conf.d/daily.conf
+          listen       80;
+          server_name  daily.wenzhuo4657.org;
+
+          location /md-web/ {
+              alias  /var/www/daily/;
+              try_files $uri $uri/ /md-web/index.html;
+          }
+           location /api/ {
+                      # 预检
+          if ($request_method = OPTIONS) {
+              add_header Access-Control-Allow-Origin "*" always;
+              add_header Access-Control-Allow-Methods "GET,POST,PUT,DELETE,OPTIONS" always;
+              add_header Access-Control-Allow-Headers "Content-Type,Authorization,X-Requested-With" always;
+              add_header Access-Control-Max-Age 86400 always;
+              add_header Content-Length 0;
+              add_header Content-Type text/plain;
+              return 204;
+          }
+                      proxy_pass http://127.0.0.1:8080;
+                      add_header Access-Control-Allow-Origin "*" always;
+                      add_header Vary "Origin" always;
+              }
+
+      }
+" > /etc/nginx/conf.d/daily.conf
 
 
 echo "前端部署完成"
