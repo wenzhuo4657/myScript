@@ -94,20 +94,29 @@ chown -R www-data:www-data /var/www/daily
 
 
 echo "server {
-          listen       80;
-          server_name  daily.wenzhuo4657.org;
+                listen       80;
+                server_name  daily.wenzhuo4657.org;
 
-          location /md-web/ {
-              alias  /var/www/daily/;
+                location /md-web/ {
+                    alias  /var/www/daily/;
+
+                }
+
+                location /api/md {
+          proxy_pass http://127.0.0.1:8080/api/;  # 末尾加 /
+          proxy_set_header Host $host;
+          proxy_set_header X-Real-IP $remote_addr;
+          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+          proxy_set_header X-Forwarded-Proto $scheme;
+          add_header Access-Control-Allow-Origin "*" always;
+          add_header Vary "Origin" always;
+           if ($request_method = OPTIONS) {
+              return 204;
           }
-           location /api/ {
-
-                      proxy_pass http://127.0.0.1:8080;
-                      add_header Access-Control-Allow-Origin "*" always;
-                      add_header Vary "Origin" always;
-              }
-
       }
+
+            }
+
 " > /etc/nginx/conf.d/daily.conf
 
 
