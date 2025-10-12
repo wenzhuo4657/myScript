@@ -99,7 +99,6 @@ echo "server {
 
           location /md-web/ {
               alias  /var/www/daily/;
-          #   try_files $uri $uri/ /md-web/index.html;   这一句似乎会导致nginx回环？不理解
           }
            location /api/ {
 
