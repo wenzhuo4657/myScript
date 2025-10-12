@@ -72,7 +72,7 @@ cd $homeback
 git clone  https://github.com/wenzhuo4657/dailyWeb-back.git
 cd dailyWeb-back/dailyWeb/
 
-mvn clean package > /dev/null
+mvn clean package
 
 nohup java  -Ddir.beifen=$home/beifen -jar  target/dailyWeb-1.0-SNAPSHOT.jar  &
 
@@ -99,19 +99,10 @@ echo "server {
 
           location /md-web/ {
               alias  /var/www/daily/;
-              try_files $uri $uri/ /md-web/index.html;
+          #   try_files $uri $uri/ /md-web/index.html;   这一句似乎会导致nginx回环？不理解
           }
            location /api/ {
-                      # 预检
-          if ($request_method = OPTIONS) {
-              add_header Access-Control-Allow-Origin "*" always;
-              add_header Access-Control-Allow-Methods "GET,POST,PUT,DELETE,OPTIONS" always;
-              add_header Access-Control-Allow-Headers "Content-Type,Authorization,X-Requested-With" always;
-              add_header Access-Control-Max-Age 86400 always;
-              add_header Content-Length 0;
-              add_header Content-Type text/plain;
-              return 204;
-          }
+
                       proxy_pass http://127.0.0.1:8080;
                       add_header Access-Control-Allow-Origin "*" always;
                       add_header Vary "Origin" always;
