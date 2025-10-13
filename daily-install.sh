@@ -91,11 +91,11 @@ mkdir -p /var/www/daily
 cp -r $homefront/dailyWeb-Front/daily/dist/* /var/www/daily
 chown -R www-data:www-data /var/www/daily
 
-
+read -r -p "设置使用的域名，默认为80端口 "  domain
 
 echo "server {
                 listen       80;
-                server_name  daily.wenzhuo4657.org;
+                server_name  $domain;
 
                 location /md-web/ {
                     alias  /var/www/daily/;
@@ -103,7 +103,7 @@ echo "server {
                 }
 
                 location /api/md {
-          proxy_pass http://127.0.0.1:8080/api/;  # 末尾加 /
+          proxy_pass http://127.0.0.1:8080/api/;
           proxy_set_header Host $host;
           proxy_set_header X-Real-IP $remote_addr;
           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -114,8 +114,7 @@ echo "server {
               return 204;
           }
       }
-
-            }
+}
 
 " > /etc/nginx/conf.d/daily.conf
 
