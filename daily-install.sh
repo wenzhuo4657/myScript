@@ -91,12 +91,11 @@ mkdir -p /var/www/daily
 cp -r $homefront/dailyWeb-Front/daily/dist/* /var/www/daily
 chown -R www-data:www-data /var/www/daily
 
-read -r -p "设置使用的域名，默认为80端口 "  domain
-
-cat > /etc/nginx/conf.d/daily.conf.tmpl <<'NGINX'
 
 read -r -p "设置使用的域名，默认为80端口 "  domain
 export domain
+cat > /etc/nginx/conf.d/daily.conf.tmpl <<'NGINX'
+
 server {
     listen 80;
     server_name ${domain};
