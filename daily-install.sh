@@ -94,6 +94,9 @@ chown -R www-data:www-data /var/www/daily
 read -r -p "设置使用的域名，默认为80端口 "  domain
 
 cat > /etc/nginx/conf.d/daily.conf.tmpl <<'NGINX'
+
+read -r -p "设置使用的域名，默认为80端口 "  domain
+export domain
 server {
     listen 80;
     server_name ${domain};
