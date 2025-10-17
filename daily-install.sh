@@ -93,30 +93,33 @@ chown -R www-data:www-data /var/www/daily
 
 read -r -p "设置使用的域名，默认为80端口 "  domain
 
-echo "server {
-                listen       80;
-                server_name  $domain;
+cat > /etc/nginx/conf.d/daily.conf.tmpl <<'NGINX'
+server {
+    listen 80;
+    server_name ${domain};
 
-                location /md-web/ {
-                    alias  /var/www/daily/;
+    location /md-web/ {
+        alias /var/www/daily/;
+    }
 
-                }
+    location /api/md {
+        proxy_pass http://127.0.0.1:8080;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
 
-                location /api/md {
-          proxy_pass http://127.0.0.1:8080;
-          proxy_set_header Host $host;
-          proxy_set_header X-Real-IP $remote_addr;
-          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-          proxy_set_header X-Forwarded-Proto $scheme;
-          add_header Access-Control-Allow-Origin "*" always;
-          add_header Vary "Origin" always;
-           if ($request_method = OPTIONS) {
-              return 204;
-          }
-      }
+        add_header Access-Control-Allow-Origin "*" always;
+        add_header Vary "Origin" always;
+
+        if ($request_method = OPTIONS) {
+            return 204;
+        }
+    }
 }
+NGINX
 
-" > /etc/nginx/conf.d/daily.conf
+envsubst '$domain' < /etc/nginx/conf.d/daily.conf.tmpl > /etc/nginx/conf.d/daily.conf
 
 
 echo "前端部署完成"
