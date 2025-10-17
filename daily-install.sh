@@ -74,6 +74,8 @@ cd dailyWeb-back/dailyWeb/
 
 mvn clean package
 
+mkdir $home/beifen
+
 nohup java  -Ddir.beifen=$home/beifen -jar  target/dailyWeb-1.0-SNAPSHOT.jar  &
 
 echo "后端部署完成"
