@@ -86,9 +86,17 @@ nohup java  -Ddir.beifen=$home/beifen -jar  target/dailyWeb-1.0-SNAPSHOT.jar  &
 echo "后端部署完成"
 
 echo "开始进行前端部署"
+
+
 cd $homefront
 git clone    https://github.com/wenzhuo4657/dailyWeb-Front.git
 cd dailyWeb-Front/daily
+
+read -r -p "设置使用的域名，默认为80端口 "  domain
+export domain
+export DAILY_WEB_API_URL=http://${domain}
+export  DAILY_WEB_BACKGROUND_URL=https://blog.wenzhuo4657.org/img/2025/10/a1a61cd9c40ef9634219fe41ea93706b.jpg
+
 npm install
 npm run build
 
@@ -99,10 +107,7 @@ cp -r $homefront/dailyWeb-Front/daily/dist/* /var/www/daily
 chown -R www-data:www-data /var/www/daily
 
 
-read -r -p "设置使用的域名，默认为80端口 "  domain
-export domain
-export DAILY_WEB_API_URL=http://${domain}
-export  DAILY_WEB_BACKGROUND_URL=https://blog.wenzhuo4657.org/img/2025/10/a1a61cd9c40ef9634219fe41ea93706b.jpg
+
 cat > /etc/nginx/conf.d/daily.conf.tmpl <<'NGINX'
 
 server {
