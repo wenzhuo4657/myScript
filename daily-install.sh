@@ -94,7 +94,7 @@ cd dailyWeb-Front/daily
 
 read -r -p "设置使用的域名，默认为80端口 "  domain
 export domain
-export DAILY_WEB_API_URL=http://${domain}
+export DAILY_WEB_API_URL=https://${domain}
 export  DAILY_WEB_BACKGROUND_URL=https://blog.wenzhuo4657.org/img/2025/10/a1a61cd9c40ef9634219fe41ea93706b.jpg
 
 npm install
