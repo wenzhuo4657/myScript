@@ -23,9 +23,14 @@ esac
 
 mkdir -p -- "$home"
 
+if [ -n "${DAILY_HOME+x}" ]; then
 
-echo "export DAILY_HOME=$home"  >> $HOME/.bashrc
-source .bashrc
+  sed -i.bak -E 's|^[[:space:]]*export[[:space:]]+DAILY_HOME=.*$|export DAILY_HOME="'"$HOME"'"|' "$HOME/.bashrc"
+else
+  echo "export DAILY_HOME=$home"  >> $HOME/.bashrc
+  source .bashrc
+fi
+
 echo "最终安装目录为：$home,对应环境变量DAILY_HOME"
 
 
@@ -96,6 +101,8 @@ chown -R www-data:www-data /var/www/daily
 
 read -r -p "设置使用的域名，默认为80端口 "  domain
 export domain
+export DAILY_WEB_API_URL=http://${domain}
+export  DAILY_WEB_BACKGROUND_URL=https://blog.wenzhuo4657.org/img/2025/10/a1a61cd9c40ef9634219fe41ea93706b.jpg
 cat > /etc/nginx/conf.d/daily.conf.tmpl <<'NGINX'
 
 server {
