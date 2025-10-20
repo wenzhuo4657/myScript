@@ -23,7 +23,9 @@ esac
 
 mkdir -p -- "$home"
 
+
 echo "export DAILY_HOME=$home"  >> $HOME/.bashrc
+
 
 echo "最终安装目录为：$home,对应环境变量DAILY_HOME"
 
