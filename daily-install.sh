@@ -23,12 +23,12 @@ esac
 
 mkdir -p -- "$home"
 
-if [ -n "${DAILY_HOME+x}" ]; then
-
-  sed -i.bak -E 's|^[[:space:]]*export[[:space:]]+DAILY_HOME=.*$|export DAILY_HOME="'"$home"'"|' "$HOME/.bashrc"
+if grep -qE '^[[:space:]]*export[[:space:]]+DAILY_HOME=' "$bashrc"; then
+  # 转义用于 sed 的特殊字符
+  escaped_home=$(printf '%s' "$home" | sed 's/[\/&|]/\\&/g')
+  sed -i.bak -E "s|^[[:space:]]*export[[:space:]]+DAILY_HOME=.*$|export DAILY_HOME=\"$escaped_home\"|" "$bashrc"
 else
-  echo "export DAILY_HOME=$home"  >> $HOME/.bashrc
-  source .bashrc
+  printf '\nexport DAILY_HOME="%s"\n' "$home" >> "$bashrc"
 fi
 
 echo "最终安装目录为：$home,对应环境变量DAILY_HOME"
