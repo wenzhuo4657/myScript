@@ -25,7 +25,7 @@ mkdir -p -- "$home"
 
 if [ -n "${DAILY_HOME+x}" ]; then
 
-  sed -i.bak -E 's|^[[:space:]]*export[[:space:]]+DAILY_HOME=.*$|export DAILY_HOME="'"$HOME"'"|' "$HOME/.bashrc"
+  sed -i.bak -E 's|^[[:space:]]*export[[:space:]]+DAILY_HOME=.*$|export DAILY_HOME="'"$home"'"|' "$HOME/.bashrc"
 else
   echo "export DAILY_HOME=$home"  >> $HOME/.bashrc
   source .bashrc
