@@ -23,9 +23,8 @@ esac
 
 mkdir -p -- "$home"
 
-
 echo "export DAILY_HOME=$home"  >> $HOME/.bashrc
-source .bashrc
+
 echo "最终安装目录为：$home,对应环境变量DAILY_HOME"
 
 
@@ -74,14 +73,24 @@ cd dailyWeb-back/dailyWeb/
 
 mvn clean package
 
+mkdir $home/beifen
+
 nohup java  -Ddir.beifen=$home/beifen -jar  target/dailyWeb-1.0-SNAPSHOT.jar  &
 
 echo "后端部署完成"
 
 echo "开始进行前端部署"
+
+
 cd $homefront
 git clone    https://github.com/wenzhuo4657/dailyWeb-Front.git
 cd dailyWeb-Front/daily
+
+read -r -p "设置使用的域名，默认为80端口 "  domain
+export domain
+export DAILY_WEB_API_URL=https://${domain}
+export  DAILY_WEB_BACKGROUND_URL=https://blog.wenzhuo4657.org/img/2025/10/a1a61cd9c40ef9634219fe41ea93706b.jpg
+
 npm install
 npm run build
 
@@ -91,32 +100,36 @@ mkdir -p /var/www/daily
 cp -r $homefront/dailyWeb-Front/daily/dist/* /var/www/daily
 chown -R www-data:www-data /var/www/daily
 
-read -r -p "设置使用的域名，默认为80端口 "  domain
 
-echo "server {
-                listen       80;
-                server_name  $domain;
 
-                location /md-web/ {
-                    alias  /var/www/daily/;
+cat > /etc/nginx/conf.d/daily.conf.tmpl <<'NGINX'
 
-                }
+server {
+    listen 80;
+    server_name ${domain};
 
-                location /api/md {
-          proxy_pass http://127.0.0.1:8080/api/;
-          proxy_set_header Host $host;
-          proxy_set_header X-Real-IP $remote_addr;
-          proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-          proxy_set_header X-Forwarded-Proto $scheme;
-          add_header Access-Control-Allow-Origin "*" always;
-          add_header Vary "Origin" always;
-           if ($request_method = OPTIONS) {
-              return 204;
-          }
-      }
+    location /md-web/ {
+        alias /var/www/daily/;
+    }
+
+    location /api {
+        proxy_pass http://127.0.0.1:8080;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        add_header Access-Control-Allow-Origin "*" always;
+        add_header Vary "Origin" always;
+
+        if ($request_method = OPTIONS) {
+            return 204;
+        }
+    }
 }
+NGINX
 
-" > /etc/nginx/conf.d/daily.conf
+envsubst '$domain' < /etc/nginx/conf.d/daily.conf.tmpl > /etc/nginx/conf.d/daily.conf
 
 
 echo "前端部署完成"
