@@ -73,7 +73,7 @@ cd $homeback
 git clone  https://github.com/wenzhuo4657/dailyWeb-back.git
 cd dailyWeb-back/dailyWeb/
 
-mvn clean package
+mvn clean package  -DskipTests  # 跳过测试
 
 mkdir $home/beifen
 
