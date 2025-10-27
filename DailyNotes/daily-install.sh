@@ -84,7 +84,7 @@ get_release_info() {
 
 # Choose backend release
 echo "Select backend version..."
-back_release=$(get_release_info "wenzhuo" "dailyNotes-back")
+back_release=$(get_release_info "wenzhuo4657" "dailyNotes-back")
 if [[ -z "$back_release" || "$back_release" == *"ERROR"* ]]; then
   echo "Failed to get backend release info"
   exit 1
@@ -96,7 +96,7 @@ echo "Selected backend tag: $SELECTED_TAG"
 
 # Choose frontend release
 echo "Select frontend version..."
-front_release=$(get_release_info "wenzhuo" "dailyNotes-Front")
+front_release=$(get_release_info "wenzhuo4657" "dailyNotes-Front")
 if [[ -z "$front_release" || "$front_release" == *"ERROR"* ]]; then
   echo "Failed to get frontend release info"
   exit 1
