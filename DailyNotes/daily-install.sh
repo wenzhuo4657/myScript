@@ -1,203 +1,201 @@
 #!/bin/bash
 
-# 设置错误处理
 set -e
 
-# 1,设置安装目录，默认为~/snap/daiy
+# 1) Choose install directory (default: ~/snap/test)
 home_default="$HOME/snap/test"
 home="$home_default"
 
-echo "1) 设置安装目录，默认：$home_default"
-
-read -r -p "是否使用默认目录？(Y/n): " ans
-
+echo "1) Install directory default: $home_default"
+read -r -p "Use default directory? (Y/n): " ans
 case "${ans:-y}" in
-    [Nn])
-        read -r -p "请输入自定义安装目录: " input_home
-        home="$input_home"
-        ;;
-    *)
-        home="$home_default"
-        ;;
+  [Nn])
+    read -r -p "Enter custom install directory: " input_home
+    home="$input_home"
+    ;;
+  *)
+    home="$home_default"
+    ;;
 esac
 
-# 创建安装目录
+# Ensure install directory exists
 mkdir -p -- "$home"
 
-# 设置环境变量
+# Export env var for future shells
 echo "export DAILY_HOME=$home" >> "$HOME/.bashrc"
-echo "最终安装目录为：$home,对应环境变量DAILY_HOME"
+echo "Using install directory: $home (exported DAILY_HOME)"
 
-# 创建项目目录
+# Prepare working directories
 homeback="$home/daily-back"
 homefront="$home/daily-front"
-mkdir -p "$homeback"
-mkdir -p "$homefront"
+mkdir -p "$homeback" "$homefront"
 
-# 安装依赖软件
-echo "检查并安装依赖软件..."
+# Dependencies check
+echo "Checking required dependencies..."
 if command -v curl >/dev/null 2>&1; then
-    curl -fsSL https://raw.githubusercontent.com/wenzhuo4657/myScript/refs/heads/main/detectAptSoftware.sh | bash -s -- git node mvn nginx
+  # Check presence of tools (script only checks; it does not install)
+  curl -fsSL https://raw.githubusercontent.com/wenzhuo4657/myScript/main/detectAptSoftware.sh \
+    | bash -s -- git node npm mvn nginx jq
 else
-    echo "curl未安装，请先安装curl"
-    exit 1
+  echo "curl is not installed. Please install curl first."
+  exit 1
 fi
 
 if [ $? -ne 0 ]; then
-    echo "安装失败，请检查网络连接或手动安装依赖软件"
-    exit 1
+  echo "Dependency check failed. Please install the missing tools and retry."
+  exit 1
 fi
 
-# 函数：下载并获取release信息
+# Helper: interactively select a GitHub release and return "<tag> <url>"
 get_release_info() {
-    local owner="$1"
-    local repo="$2"
-    local temp_script="/tmp/release_selector_$(date +%s).sh"
+  local owner="$1"
+  local repo="$2"
+  local temp_script="/tmp/release_selector_$(date +%s).sh"
 
-    # 下载release选择脚本
-    curl -fsSL "https://raw.githubusercontent.com/wenzhuo4657/myScript/refs/heads/main/DailyNotes/curl-releases.sh" -o "$temp_script"
-    chmod +x "$temp_script"
+  # Download the selector script (correct raw URL)
+  curl -fsSL "https://raw.githubusercontent.com/wenzhuo4657/myScript/main/DailyNotes/curl-releases.sh" -o "$temp_script"
+  chmod +x "$temp_script"
 
-    # 运行脚本并获取结果
-    local result
-    result=$("$temp_script" "$owner" "$repo")
+  # Run it in current shell to capture exported vars, while keeping its UI visible
+  local tag url
+  if [ -t 1 ]; then
+    # Preserve user prompts/output to terminal; only our final echo is captured
+    exec 3>&1
+    # shellcheck disable=SC1090
+    source "$temp_script" "$owner" "$repo" 1>&3
+    exec 3>&-
+  else
+    # shellcheck disable=SC1090
+    source "$temp_script" "$owner" "$repo"
+  fi
 
-    # 清理临时文件
-    rm -f "$temp_script"
+  tag="${SELECTED_TAG:-}"
+  url="${SELECTED_URL:-}"
 
-    echo "$result"
+  rm -f "$temp_script"
+
+  if [[ -z "$tag" || -z "$url" ]]; then
+    echo "ERROR: failed to get release info" >&2
+    return 1
+  fi
+
+  echo "$tag $url"
 }
 
-# 获取后端release信息
-echo "选择后端版本..."
+# Choose backend release
+echo "Select backend version..."
 back_release=$(get_release_info "wenzhuo" "dailyNotes-back")
 if [[ -z "$back_release" || "$back_release" == *"ERROR"* ]]; then
-    echo "获取后端release失败"
-    exit 1
+  echo "Failed to get backend release info"
+  exit 1
 fi
 SELECTED_TAG=$(echo "$back_release" | awk '{print $1}')
 SELECTED_URL=$(echo "$back_release" | awk '{print $2}')
 back="$SELECTED_URL"
-echo "选择的后端版本: $SELECTED_TAG"
+echo "Selected backend tag: $SELECTED_TAG"
 
-# 获取前端release信息
-echo "选择前端版本..."
+# Choose frontend release
+echo "Select frontend version..."
 front_release=$(get_release_info "wenzhuo" "dailyNotes-Front")
 if [[ -z "$front_release" || "$front_release" == *"ERROR"* ]]; then
-    echo "获取前端release失败"
-    exit 1
+  echo "Failed to get frontend release info"
+  exit 1
 fi
 SELECTED_TAG=$(echo "$front_release" | awk '{print $1}')
 SELECTED_URL=$(echo "$front_release" | awk '{print $2}')
 front="$SELECTED_URL"
-echo "选择的前端版本: $SELECTED_TAG"
+echo "Selected frontend tag: $SELECTED_TAG"
 
-# 后端部署
-echo "开始进行后端部署..."
+# Backend setup
+echo "Starting backend setup..."
 cd "$homeback"
 
-# 下载后端tar.gz包
-echo "下载后端源码包..."
+echo "Downloading backend source..."
 back_filename="daily-back-$(date +%s).tar.gz"
 if ! curl -L -o "$back_filename" "$back"; then
-    echo "下载后端源码包失败"
-    exit 1
+  echo "Failed to download backend source"
+  exit 1
 fi
 
-echo "解压后端源码包..."
+echo "Extracting backend source..."
 if ! tar -xzf "$back_filename"; then
-    echo "解压后端源码包失败"
-    exit 1
+  echo "Failed to extract backend source"
+  exit 1
 fi
 
-# 进入项目目录（根据实际解压后的目录结构调整）
+# The extracted structure is expected like dailyWeb-back/dailyWeb
 cd dailyWeb-back/dailyWeb/
 
-# Maven构建
-echo "开始Maven构建..."
+echo "Building backend with Maven..."
 mvn clean package -DskipTests
 
-# 创建备份目录
+# Prepare data dir
 mkdir -p "$home/beifen"
 
-# 启动后端服务
-echo "启动后端服务..."
+echo "Launching backend service..."
 nohup java -Ddir.beifen="$home/beifen" -jar target/dailyWeb-1.0-SNAPSHOT.jar > "$home/back.log" 2>&1 &
 BACK_PID=$!
-echo "后端服务已启动，PID: $BACK_PID"
-echo "后端日志: $home/back.log"
+echo "Backend started with PID: $BACK_PID"
+echo "Backend logs: $home/back.log"
 
-# 等待后端服务启动
 sleep 10
-
-# 检查后端服务是否启动成功
 if ! curl -s http://localhost:8080 >/dev/null 2>&1; then
-    echo "警告：后端服务可能未正常启动，请检查日志: $home/back.log"
+  echo "Warning: backend may not be up yet. Check logs: $home/back.log"
 fi
+echo "Backend setup complete"
 
-echo "后端部署完成"
-
-# 前端部署
-echo "开始进行前端部署..."
-
+# Frontend setup
+echo "Starting frontend setup..."
 cd "$homefront"
 
-# 下载前端tar.gz包
-echo "下载前端源码包..."
+echo "Downloading frontend source..."
 front_filename="daily-front-$(date +%s).tar.gz"
 if ! curl -L -o "$front_filename" "$front"; then
-    echo "下载前端源码包失败"
-    exit 1
+  echo "Failed to download frontend source"
+  exit 1
 fi
 
-echo "解压前端源码包..."
+echo "Extracting frontend source..."
 if ! tar -xzf "$front_filename"; then
-    echo "解压前端源码包失败"
-    exit 1
+  echo "Failed to extract frontend source"
+  exit 1
 fi
 
-# 进入项目目录（根据实际解压后的目录结构调整）
+# The extracted structure is expected like dailyWeb-Front/daily
 cd dailyWeb-Front/daily
 
-# 域名设置
-read -r -p "设置使用的域名（默认为localhost）: " domain
+read -r -p "Domain to use (default: localhost): " domain
 domain="${domain:-localhost}"
 
-# 确定API URL
 if [[ "$domain" == "localhost" ]]; then
-    api_url="http://localhost:8080"
+  api_url="http://localhost:8080"
 else
-    api_url="https://$domain"
+  api_url="https://$domain"
 fi
 
-# 设置前端环境变量
 export VITE_API_BASE_URL="$api_url"
 export VITE_BACKGROUND_URL="https://blog.wenzhuo4657.org/img/2025/10/a1a61cd9c40ef9634219fe41ea93706b.jpg"
 
-# 安装依赖并构建
-echo "安装前端依赖..."
+echo "Installing frontend deps..."
 npm install
 
-echo "构建前端项目..."
+echo "Building frontend..."
 npm run build
 
-# 部署前端文件
-echo "部署前端文件到nginx..."
+echo "Publishing frontend to nginx..."
 if [ -d "/var/www/daily" ]; then
-    sudo rm -rf /var/www/daily
+  sudo rm -rf /var/www/daily
 fi
 sudo mkdir -p /var/www/daily
 sudo cp -r "$homefront/dailyWeb-Front/daily/dist/"* /var/www/daily/
 sudo chown -R www-data:www-data /var/www/daily
 
-# Nginx配置
-echo "配置nginx..."
+echo "Configuring nginx..."
 sudo cat > /etc/nginx/conf.d/daily.conf.tmpl <<'NGINX'
 server {
     listen 80;
     server_name ${domain};
 
-    # 前端静态文件
     location / {
         root /var/www/daily;
         index index.html index.htm;
@@ -208,7 +206,6 @@ server {
         add_header Expires "0";
     }
 
-    # API代理
     location /api {
         proxy_pass http://127.0.0.1:8080;
         proxy_set_header Host $host;
@@ -216,7 +213,6 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
 
-        # CORS配置
         add_header 'Access-Control-Allow-Origin' '*' always;
         add_header 'Access-Control-Allow-Methods' 'GET, POST, PUT, DELETE, OPTIONS' always;
         add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization' always;
@@ -236,43 +232,38 @@ server {
 }
 NGINX
 
-# 替换模板变量
+# Substitute domain into template
 sudo envsubst '$domain' < /etc/nginx/conf.d/daily.conf.tmpl | sudo tee /etc/nginx/conf.d/daily.conf > /dev/null
 sudo rm -f /etc/nginx/conf.d/daily.conf.tmpl
 
-echo "前端部署完成"
+echo "Frontend setup complete"
 
-# 重启nginx
-echo "重启nginx服务..."
+echo "Restarting nginx..."
 sudo systemctl restart nginx
 
-# 检查nginx状态
 if sudo systemctl is-active --quiet nginx; then
-    echo "nginx重启成功"
+  echo "nginx restarted successfully"
 else
-    echo "nginx重启失败，请检查配置"
-    sudo nginx -t
+  echo "nginx restart failed; see nginx -t output"
+  sudo nginx -t || true
 fi
 
-# 清理下载的压缩包
-echo "清理临时文件..."
-rm -f "$homeback/$back_filename"
-rm -f "$homefront/$front_filename"
+echo "Cleaning temporary archives..."
+rm -f "$homeback/$back_filename" "$homefront/$front_filename"
 
 echo ""
 echo "======================================"
-echo "🎉 部署完成！"
+echo "Install completed"
 echo "======================================"
-echo "安装目录: $home"
-echo "后端服务: http://localhost:8080"
-echo "前端服务: http://$domain"
-echo "后端日志: $home/back.log"
-echo "后端进程ID: $BACK_PID"
+echo "Install dir: $home"
+echo "Backend URL: http://localhost:8080"
+echo "Frontend URL: http://$domain"
+echo "Backend log: $home/back.log"
+echo "Backend PID: $BACK_PID"
 echo ""
-echo "使用以下命令查看服务状态："
+echo "Useful commands:"
 echo "  ps aux | grep dailyWeb"
 echo "  tail -f $home/back.log"
-echo ""
-echo "使用以下命令停止服务："
 echo "  kill $BACK_PID"
 echo "======================================"
+
